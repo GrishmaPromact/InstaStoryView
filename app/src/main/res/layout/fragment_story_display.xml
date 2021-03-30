@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/container"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:orientation="horizontal"
+        android:isScrollContainer="false"
+        android:nestedScrollingEnabled="false"/>
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/storyOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="90dp"
+            android:background="@drawable/story_top_shadow"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/storyDisplayProfile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="4dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="16dp">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/storyDisplayProfilePicture"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_margin="8dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/storyDisplayNick"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#ffffff"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    tools:text="username" />
+
+                <TextView
+                    android:id="@+id/storyDisplayTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#ffffff"
+                    android:textSize="12sp"
+                    tools:text="nm ago" />
+
+            </LinearLayout>
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/ivCloseStory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_baseline_close_24"
+                android:layout_marginEnd="16dp"
+                android:tint="@color/white"
+                />
+        </LinearLayout>
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <include
+        android:id="@+id/bottomSheet"
+        layout="@layout/bottom_sheet_comments" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
