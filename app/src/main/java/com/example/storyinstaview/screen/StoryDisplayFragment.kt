@@ -141,9 +141,14 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
         val bottomSheetBehavior = BottomSheetBehavior.from<View>(binding.bottomSheet.commentsLayout)
 
         binding.bottomSheet.etComment.clearFocus()
+
         binding.bottomSheet.etComment.setOnClickListener(View.OnClickListener {
-            binding.bottomSheet.etComment.requestFocus()
-            momentz?.pause(false)
+            if(binding.bottomSheet.etComment.isCursorVisible){
+                momentz?.pause(false)
+            } else {
+                binding.bottomSheet.etComment.requestFocus()
+                momentz?.pause(false)
+            }
             bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
         }
         )
@@ -324,6 +329,7 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
 
 
     private fun playVideo(videoView: VideoView, index: Int, momentz: Momentz, currentUrl: String) {
+
         val str = currentUrl
         val uri = Uri.parse(str)
 
