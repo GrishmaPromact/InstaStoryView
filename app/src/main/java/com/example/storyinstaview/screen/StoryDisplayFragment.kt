@@ -227,7 +227,7 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
         Log.d("hi::", "onNextCalled: story next position : "+index +"::"+ listItem.value)
         newListItem = index
         //if(newListItem!! > 0) {
-            //stories[newListItem!!].commentsList?.clear()
+            stories[newListItem!!].commentsList?.clear()
             commentsAdapter?.updateList(stories[newListItem!!].commentsList)
         //}
        // commentsAdapter?.notifyDataSetChanged()
