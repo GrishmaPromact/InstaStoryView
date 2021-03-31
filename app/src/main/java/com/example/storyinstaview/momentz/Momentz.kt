@@ -1,9 +1,6 @@
 package com.example.storyinstaview.momentz
 
 import android.content.Context
-import android.content.Intent
-import android.icu.text.LocaleDisplayNames
-import android.os.Parcelable
 import android.util.Log
 import android.view.*
 import android.widget.ImageView
@@ -13,10 +10,8 @@ import android.view.GestureDetector.SimpleOnGestureListener
 import androidx.annotation.DrawableRes
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.MutableLiveData
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.storyinstaview.R
 import com.example.storyinstaview.databinding.ProgressStoryViewBinding
-import com.example.storyinstaview.utils.BROADCAST_STORY_END
 import java.lang.Exception
 
 
@@ -64,6 +59,7 @@ class Momentz : ConstraintLayout {
                 object : ProgressTimeWatcher {
                     override fun onEnd(indexFinished: Int) {
                        // currentlyShownIndex = indexFinished + 1
+                        //currentlyShownIndex+
                         next()
                     }
                 },
@@ -80,6 +76,7 @@ class Momentz : ConstraintLayout {
                 if(!pausedState){
                     this.pausedState = !pausedState
                     pause(false)
+                    //resume()
                 }
             } else {
                 if(pausedState){
@@ -116,12 +113,15 @@ class Momentz : ConstraintLayout {
                     when(event?.action){
                         MotionEvent.ACTION_DOWN -> {
                             //before it was true
-                            callPause(true)
+                            pause(false)
+                            //callPause(true)
+                            //resume()
                             return true
                         }
 
                         MotionEvent.ACTION_UP -> {
-                            callPause(false)
+                            resume()
+                            //callPause(false)
                             return true
                         }
                         else -> return false
@@ -168,8 +168,13 @@ class Momentz : ConstraintLayout {
 
 
         listItem.postValue(currentlyShownIndex)
-        //viewedIndex++
-        momentzCallback.onNextCalled(currentView, this, currentlyShownIndex , currentUrl!!)
+
+          if(viewedIndex == momentzViewList.size){
+                   viewedIndex = 0
+               }else{
+                   viewedIndex++
+               }
+        momentzCallback.onNextCalled(currentView, this, currentlyShownIndex , currentUrl!!,viewedIndex)
 
         view.currentlyDisplayedView.removeAllViews()
         view.currentlyDisplayedView.addView(currentView)
@@ -189,8 +194,18 @@ class Momentz : ConstraintLayout {
 //            Handler().postDelayed({
 //                show()
 //            }, 2000)
-        //currentlyShownIndex = viewedIndex
+      /*  if(viewedIndex == 0)
+            currentlyShownIndex = viewedIndex
+        else {*/
+            currentlyShownIndex = viewedIndex
+        //}
+        if(currentlyShownIndex == momentzViewList.size){
+            currentlyShownIndex = 0
+        } else if(currentlyShownIndex > momentzViewList.size){
+            currentlyShownIndex--
+        }
         show()
+        Log.d("hi::" ,"start: show called from start")
     }
 
     fun editDurationAndResume(index: Int, newDurationInSecons : Int){
@@ -202,9 +217,11 @@ class Momentz : ConstraintLayout {
         if(withLoader){
             view.loaderProgressbar.visibility = View.VISIBLE
         }
-        libSliderViewList[currentlyShownIndex].pauseProgress()
-        if(momentzViewList[currentlyShownIndex].view is VideoView){
-            (momentzViewList[currentlyShownIndex].view as VideoView).pause()
+        if(currentlyShownIndex < libSliderViewList.size) {
+            libSliderViewList[currentlyShownIndex].pauseProgress()
+            if (momentzViewList[currentlyShownIndex].view is VideoView) {
+                (momentzViewList[currentlyShownIndex].view as VideoView).pause()
+            }
         }
     }
 
@@ -226,8 +243,13 @@ class Momentz : ConstraintLayout {
 
     fun next() {
         try {
+            if(currentlyShownIndex >= momentzViewList.size){
+                currentlyShownIndex--
+            }
+           // currentView = momentzViewList[currentlyShownIndex].view
             if (currentView == momentzViewList[currentlyShownIndex].view) {
                 currentlyShownIndex++
+                //viewedIndex++
 
               /*  if(viewedIndex == momentzViewList.size){
                     viewedIndex = 0
@@ -241,6 +263,7 @@ class Momentz : ConstraintLayout {
                 }
             }
             show()
+            Log.d("hi::" ,"start: show called from next")
         } catch (e: IndexOutOfBoundsException) {
             e.printStackTrace()
             //finish()
@@ -258,17 +281,25 @@ class Momentz : ConstraintLayout {
     fun prev() {
         try {
             Log.d("hi:::", "prevvvv: " +currentlyShownIndex)
+            if(currentlyShownIndex >= momentzViewList.size){
+                currentlyShownIndex--
+            }
             if (currentView == momentzViewList[currentlyShownIndex].view) {
                 currentlyShownIndex--
+
                 if (0 > currentlyShownIndex) {
                     currentlyShownIndex = 0
+                    viewedIndex = 0
                     momentzCallback.previous()
                 }
             }
+            //show()
+            Log.d("hi::" ,"start: show called from previous")
         } catch (e: IndexOutOfBoundsException) {
             e.printStackTrace()
-            currentlyShownIndex -= 2
-        } finally {
+            //currentlyShownIndex -= 2
+        }
+        finally {
             show()
         }
     }

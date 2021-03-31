@@ -1,6 +1,9 @@
 package com.example.storyinstaview.screen
 
+import android.animation.Animator
+import android.animation.ValueAnimator
 import android.app.Activity.RESULT_OK
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.media.MediaPlayer
@@ -13,12 +16,13 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import android.widget.VideoView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.MutableLiveData
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.bumptech.glide.Glide
@@ -107,30 +111,32 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
                         R.drawable.bieber
                 )
         )
+        if(isAdded) {
 
-        //image to be loaded from the internet
-        val internetLoadedImageView = ImageView(requireActivity())
+            //image to be loaded from the internet
+            val internetLoadedImageView = ImageView(requireActivity())
 
-        //video to be loaded from the internet
-        val internetLoadedVideo = VideoView(requireActivity())
+            //video to be loaded from the internet
+            val internetLoadedVideo = VideoView(requireActivity())
 
-        val listOfViews: MutableList<MomentzView> = mutableListOf()
-        stories.forEachIndexed { index, stories ->
-            val cal: Calendar = Calendar.getInstance(Locale.ENGLISH).apply {
-                timeInMillis = stories.storyDate!!
+            val listOfViews: MutableList<MomentzView> = mutableListOf()
+            stories.forEachIndexed { index, stories ->
+                val cal: Calendar = Calendar.getInstance(Locale.ENGLISH).apply {
+                    timeInMillis = stories.storyDate!!
+                }
+                binding.storyDisplayTime.text = DateFormat.format("MM-dd-yyyy HH:mm:ss", cal).toString()
+                if (stories.checkIsVideo()) {
+                    listOfViews.add(MomentzView(internetLoadedVideo, 60, stories.storyUrl.toString(), stories.isStorySeen!!, stories))
+                } else {
+                    listOfViews.add(MomentzView(internetLoadedImageView, 10, stories.storyUrl.toString(), stories.isStorySeen!!, stories))
+                }
             }
-            binding.storyDisplayTime.text = DateFormat.format("MM-dd-yyyy HH:mm:ss", cal).toString()
-            if (stories.checkIsVideo()) {
-                listOfViews.add(MomentzView(internetLoadedVideo, 60, stories.storyUrl.toString(), stories.isStorySeen!!, stories))
-            } else {
-                listOfViews.add(MomentzView(internetLoadedImageView, 10, stories.storyUrl.toString(), stories.isStorySeen!!, stories))
-            }
+
+            //if (isAdded && isVisible) {
+            momentz = Momentz(requireActivity(), listOfViews, binding.container, this, storyUser.viewIndex!!, listItem)
+            momentz?.start()
+            // }
         }
-
-
-        momentz = Momentz(requireActivity(), listOfViews, binding.container, this, storyUser.viewIndex!!,listItem)
-        momentz?.start()
-
         Glide.with(this).load(storyUser.userProfileUrl).circleCrop().into(binding.storyDisplayProfilePicture)
         binding.storyDisplayNick.text = storyUser.userName
         binding.ivCloseStory.setOnClickListener {
@@ -143,7 +149,7 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
         binding.bottomSheet.etComment.clearFocus()
 
         binding.bottomSheet.etComment.setOnClickListener(View.OnClickListener {
-            if(binding.bottomSheet.etComment.isCursorVisible){
+            if (binding.bottomSheet.etComment.isCursorVisible) {
                 momentz?.pause(false)
             } else {
                 binding.bottomSheet.etComment.requestFocus()
@@ -170,7 +176,7 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
 
             //commentsList?.add(commentsModel)
             listItem.observe(this, {
-                Log.d("hi::", "onCreateView: story position:"+it)
+                Log.d("hi::", "onCreateView: story position:" + it)
 
             })
             stories[newListItem!!].commentsList?.add(commentsModel)
@@ -181,8 +187,22 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
             //commentsAdapter?.notifyDataSetChanged()
 
         }
-
+        checkIsKeyBoardOpen()
         return (binding.root)
+    }
+
+    private fun checkIsKeyBoardOpen() {
+        val imm: InputMethodManager = requireActivity().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+
+        if (imm.isActive) {
+            //return true
+            Log.e("hi::", "checkIsKeyBoardOpen: Keyboard  showing")
+            //writeToLog("Software Keyboard was shown")
+        } else {
+            //return false
+            Log.e("hi::", "checkIsKeyBoardOpen: Keyboard not showing")
+            //writeToLog("Software Keyboard was not shown")
+        }
     }
 
     private fun initRV() {
@@ -224,12 +244,15 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
                     putParcelable(EXTRA_STORY_USER, story)
                     putParcelableArrayList(EXTRA_STORY_USER_LIST, storyUserList)
                 }
+
             }
         }
     }
 
-    override fun onNextCalled(view: View, momentz: Momentz, index: Int, currentUrl: String) {
-        Log.d("hi::", "onNextCalled: story next position : "+index +"::"+ listItem.value)
+
+
+    override fun onNextCalled(view: View, momentz: Momentz, index: Int, currentUrl: String, viewedIndex: Int) {
+        Log.d("hi::", "onNextCalled: story next position : " + index + "::" + listItem.value)
         newListItem = index
         //if(newListItem!! > 0) {
             stories[newListItem!!].commentsList?.clear()
@@ -238,23 +261,44 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
        // commentsAdapter?.notifyDataSetChanged()
         if (view is VideoView) {
             momentz.pause(true)
-            //storyUser.viewIndex = index
+            //storyUserList[position].viewIndex = index+ 1
+            if(storyUserList[position].isStorySeen == true){
+                storyUserList[position].viewIndex = 0
+                storyUserList[position].isStorySeen = true
+            } else {
+                if (storyUserList[position].viewIndex == stories.size) {
+                    storyUserList[position].viewIndex = 0
+                    storyUserList[position].isStorySeen = true
+                } else {
+                    storyUserList[position].viewIndex = viewedIndex
+                }
+            }
             /*  if(storyUser.viewIndex == stories.size){
                   storyUser.viewIndex = 0
               }else{
                   storyUser?.viewIndex!! + 1
               }*/
-            stories[index].isStorySeen = true
+            //stories[index].isStorySeen = true
             playVideo(view, index, momentz, currentUrl)
         } else if ((view is ImageView)) {
             momentz.pause(true)
-            //storyUser.viewIndex = index
+            if(storyUserList[position].isStorySeen == true){
+                storyUserList[position].viewIndex = 0
+                storyUserList[position].isStorySeen = true
+            } else {
+                if (storyUserList[position].viewIndex == stories.size) {
+                    storyUserList[position].viewIndex = 0
+                    storyUserList[position].isStorySeen = true
+                } else {
+                    storyUserList[position].viewIndex = viewedIndex
+                }
+            }
             /* if(storyUser.viewIndex == stories.size){
                  storyUser.viewIndex = 0
              }else{
                  storyUser?.viewIndex!! + 1
              }*/
-            stories[index].isStorySeen = true
+            //stories[index].isStorySeen = true
             Picasso.get()
                     .load(currentUrl)
                     .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
@@ -265,7 +309,7 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
                         }
 
                         override fun onError(e: Exception?) {
-                            Toast.makeText(requireActivity(), e?.localizedMessage, Toast.LENGTH_LONG).show()
+                            //Toast.makeText(requireActivity(), e?.localizedMessage, Toast.LENGTH_LONG).show()
                             e?.printStackTrace()
                         }
                     })
@@ -273,6 +317,7 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
     }
 
     override fun previous() {
+        storyUserList[position].storiesList = stories
         val intent = Intent(BROADCAST_STORY_PREVIOUS)
         Log.e("TAG", "done: ${position}")
         intent.putExtra("KeyPrev", position)
@@ -291,6 +336,7 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
     }
 
     override fun done() {
+        storyUserList[position].storiesList = stories
         val intent = Intent(BROADCAST_STORY_END)
         Log.e("TAG", "done: ${position}")
         intent.putExtra("KeyNext", position)
@@ -340,6 +386,7 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
 
         videoView.setOnInfoListener(object : MediaPlayer.OnInfoListener {
             override fun onInfo(mp: MediaPlayer?, what: Int, extra: Int): Boolean {
+
                 if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) {
                     // Here the video starts
                     momentz.editDurationAndResume(index, (videoView.duration) / 1000)
@@ -350,5 +397,39 @@ class StoryDisplayFragment : Fragment(), MomentzCallback {
             }
         })
     }
+
+    override fun onResume() {
+        super.onResume()
+        //image to be loaded from the internet
+       /* val internetLoadedImageView = ImageView(requireActivity())
+
+        //video to be loaded from the internet
+        val internetLoadedVideo = VideoView(requireActivity())
+
+        val listOfViews: MutableList<MomentzView> = mutableListOf()
+        stories.forEachIndexed { index, stories ->
+            val cal: Calendar = Calendar.getInstance(Locale.ENGLISH).apply {
+                timeInMillis = stories.storyDate!!
+            }
+            binding.storyDisplayTime.text = DateFormat.format("MM-dd-yyyy HH:mm:ss", cal).toString()
+            if (stories.checkIsVideo()) {
+                listOfViews.add(MomentzView(internetLoadedVideo, 60, stories.storyUrl.toString(), stories.isStorySeen!!, stories))
+            } else {
+                listOfViews.add(MomentzView(internetLoadedImageView, 10, stories.storyUrl.toString(), stories.isStorySeen!!, stories))
+            }
+        }
+
+        //if (isAdded && isVisible) {
+        //if(momentz==null) {
+            momentz = Momentz(requireActivity(), listOfViews, binding.container, this, storyUser.viewIndex!!, listItem)
+            momentz?.start()*/
+        //}else{
+        //    momentz = Momentz(requireActivity(), listOfViews, binding.container, this, storyUser.viewIndex!!, listItem)
+        //}
+        // }
+
+    }
+
+
 
 }
